@@ -14,23 +14,40 @@ if [ "$#" -eq 0 ]; then
     echo "警告: アカウント名が指定されていません。"
 fi
 
+# アカウント名の表示を囲むための関数
+print_boxed() {
+    local -r msg="$1"
+    local edge=$(printf '%*s' "${#msg}")
+    edge=${edge// /─}
+    echo "┌$edge┐"
+    echo "│$msg│"
+    echo "└$edge┘"
+}
+
+
+# コミット情報を整理して表示するための関数
+display_commit_info() {
+    local commit=$1
+    # コミットが属するブランチ名を取得
+    local branch_name=$(git name-rev --name-only --refs="refs/heads/*" $commit)
+    # コミットのハッシュ、日付、メッセージを取得
+    local commit_info=$(git log -1 --pretty=format:"%h, %ad, %s" --date=short $commit)
+    
+    # 整形して出力
+    printf " ------ Commit Log: [%s] %s\n" "$branch_name" "$commit_info"
+}
+
 # 指定されたディレクトリ以下で`.git`ディレクトリを検索
 find "$SEARCH_DIR" -type d -name ".git" | while read repo; do
     repo_path=$(dirname "$repo")  # .gitを含むパスから.gitを削除してリポジトリのパスを取得
-    echo "▲▲▲ Repository: $repo_path"
+    print_boxed " Repository: $repo_path "
     cd "$repo_path" || continue   # そのリポジトリのパスに移動
 
     # 各アカウントについてコミットを検索
     for author in "$@"; do
-        echo "▲▲▲ Account: $author"
+        echo " <<< Account: $author >>>"
         git log --since="3 months ago" --author="$author" --pretty=format:"%H" | while read commit; do
-            # コミットが属するブランチを表示（複数ある場合があるため、一例を示す）
-            echo '▲▲▲▲▲▲ Commit Message: '  `git log -1 --pretty=format:"%s" $commit`
-            echo "▲▲▲▲▲▲ Commit Date: " `git log -1 --pretty=format:"%ad" --date=short`
-            echo "▲▲▲▲▲▲ Commit Hash: $commit"
-            # git branch --contains "$commit" | while read branch; do
-            #     echo "▲▲▲▲▲▲▲▲▲ Branch: $branch"
-            # done
+            display_commit_info $commit
         done
         echo ""
     done
