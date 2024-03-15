@@ -29,18 +29,6 @@ print_boxed() {
 }
 
 
-# コミット情報を整理して表示するための関数
-display_commit_info() {
-    local commit=$1
-    # コミットが属するブランチ名を取得
-    local branch_name=$(git name-rev --name-only --refs="refs/heads/*" $commit)
-    # コミットのハッシュ、日付、メッセージを取得
-    local commit_info=$(git log -1 --pretty=format:"%h, %ad, %s" --date=short $commit)
-    
-    # 整形して出力
-    printf " ------ Commit Log: [%s] %s\n" "$branch_name" "$commit_info"
-}
-
 # 指定されたディレクトリ以下で`.git`ディレクトリを検索
 find "$SEARCH_DIR" -type d -name ".git" | while read repo; do
     repo_path=$(dirname "$repo")  # .gitを含むパスから.gitを削除してリポジトリのパスを取得
@@ -50,9 +38,8 @@ find "$SEARCH_DIR" -type d -name ".git" | while read repo; do
     # 各アカウントについてコミットを検索
     for author in "$@"; do
         echo " <<< Account: $author >>>"
-        git log --since="3 months ago" --author="$author" --pretty=format:"%H" | while read commit; do
-            display_commit_info $commit
-        done
+        echo ""
+        git log --pretty=format:"%h %cd [%Creset%s%C(yellow)%d%C(reset)]"  --author="$author" --graph --date=short --decorate --all $commit
         echo ""
     done
     cd - > /dev/null  # 元のディレクトリに戻る
