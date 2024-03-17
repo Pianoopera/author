@@ -2,7 +2,6 @@
 
 # 検索対象ディレクトリとして最初の引数を受け取る
 SEARCH_DIR="$1"
-echo "$SEARCH_DIR"
 # 検索対象ディレクトリが指定されていない、または無効な場合は警告を出してスクリプトを続行
 if [[ ! -d "$SEARCH_DIR" ]]; then
     echo "警告: 指定されたディレクトリが存在しないか、無効です。"
@@ -10,7 +9,15 @@ if [[ ! -d "$SEARCH_DIR" ]]; then
     exit 0
 fi
 
-shift  # 最初の引数を削除し、残りの引数（アカウント名）を扱う
+# 何ヶ月前のコミットを検索するかを指定
+AGO="$2"
+
+echo "検索対象ディレクトリ: $SEARCH_DIR"
+echo "検索対象期間: $AGO months ago"
+
+# 最初の引数を削除し、残りの引数（アカウント名）を扱う
+shift
+shift
 
 # アカウント名が指定されていない場合は警告を出してスクリプトを続行
 if [ "$#" -eq 0 ]; then
@@ -40,7 +47,7 @@ find "$SEARCH_DIR" -type d -name ".git" | while read repo; do
     for author in "$@"; do
         echo " <<< Account: $author >>>"
         echo ""
-        git log --pretty=format:"%h %cd [%Creset%s%C(yellow)%d%C(reset)]"  --author="$author" --graph --date=short --decorate --all $commit
+        git log --since="$AGO months ago" --pretty=format:"%h %cd [%Creset%s%C(yellow)%d%C(reset)]"  --author="$author" --graph --date=short --decorate --all -- $commit
         echo ""
     done
     cd - > /dev/null  # 元のディレクトリに戻る
