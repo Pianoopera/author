@@ -1,0 +1,16 @@
+# ビルド出力
+/author
+
+# 依存関係ディレクトリ
+/vendor/
+
+# IDE設定
+.vscode/
+.idea/
+
+# Vim バックアップファイル
+*.swp
+
+# OS 生成ファイル
+.DS_Store
+Thumbs.db
