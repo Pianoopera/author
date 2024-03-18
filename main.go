@@ -21,7 +21,7 @@ THE SOFTWARE.
 */
 package main
 
-import "author/cmd"
+import "github.com/Pianoopera/author/cmd"
 
 func main() {
 	cmd.Execute()

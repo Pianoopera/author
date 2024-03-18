@@ -1,4 +1,4 @@
-module author
+module github.com/Pianoopera/author
 
 go 1.22.1
 
