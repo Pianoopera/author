@@ -48,5 +48,5 @@ changelog:
 brews:
   - repository:
       owner: Pianoopera
-      name: homebrew-tap-author
+      name: homebrew-tap
       token: "{{ .Env.TAP_GITHUB_TOKEN }}"
