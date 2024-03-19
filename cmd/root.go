@@ -22,24 +22,73 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"fmt"
+	"log"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
+var since string
+var accounts []string
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "author",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "author is a tool to get the history of commits of a specific author",
+	Long: `author is a tool to get the history of commits of a specific author
+You can use it to get the history of commits of a specific author in all the repositories in a directory.`,
+	Args: cobra.ExactArgs(2),
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Run: func(cmd *cobra.Command, args []string) {
+		accounts = append(accounts, args[1])
+
+		out, err := executeShellScriptWithArgs(args[0], since, accounts)
+		if err != nil {
+			fmt.Printf("Error executing script: %s\n", err)
+			return
+		}
+		fmt.Printf("Script output: %s\n", out)
+	},
+}
+
+func executeShellScriptWithArgs(searchDir string, ago string, accounts []string) (string, error) {
+	err := filepath.Walk(searchDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() && info.Name() == ".git" {
+			repoPath := filepath.Dir(path)
+			fmt.Println("+" + strings.Repeat("-", len(repoPath)+13) + "+")
+			fmt.Println("| Repository: " + repoPath + " |")
+			fmt.Println("+" + strings.Repeat("-", len(repoPath)+13) + "+")
+
+			for _, author := range accounts {
+				// print the author color green
+				fmt.Printf(" <<< Account: %s >>>\n\n", author)
+				// fmt.Printf(" <<< Account: \033[32m%s\033[0m >>>\n\n", author)
+
+				cmd := exec.Command("git", "-C", repoPath, "log", "--since=\""+ago+" months ago\"", "--pretty=format:\"%h %cd [%Creset%s%C(yellow)%d%C(reset)]\"", "--author="+author, "--graph", "--date=short", "--decorate", "--all")
+				out, err := cmd.CombinedOutput()
+				if err != nil {
+					log.Fatalf("cmd.Run() failed with %s\n", err)
+				}
+				fmt.Printf("%s\n\n", out)
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		log.Fatalf("filepath.Walk() returned %v\n", err)
+	}
+
+	return "Done!!!!!!!!", nil
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -52,13 +101,9 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.git.author.log.history.yaml)")
-
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.Flags().StringVarP(&since, "since", "s", "3", "since how many months ago")
+	// --accounts user1,user2,user3
+	rootCmd.Flags().StringSliceVarP(&accounts, "accounts", "a", []string{}, "accounts to search for")
 }
