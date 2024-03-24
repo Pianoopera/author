@@ -22,6 +22,8 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -34,6 +36,13 @@ import (
 
 var since string
 var accounts []string
+
+type Commit struct {
+	Commit   string `json:"commit"`
+	Date     string `json:"date"`
+	Message  string `json:"message"`
+	Branches string `json:"branches"` // ブランチ名を含める
+}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -52,7 +61,8 @@ You can use it to get the history of commits of a specific author in all the rep
 			fmt.Printf("Error executing script: %s\n", err)
 			return
 		}
-		fmt.Printf("Script output: %s\n", out)
+		fmt.Printf("\n")
+		fmt.Printf(" Script output: %s\n", out)
 	},
 }
 
@@ -64,8 +74,10 @@ func executeShellScriptWithArgs(searchDir string, ago string, accounts []string)
 
 		if info.IsDir() && info.Name() == ".git" {
 			repoPath := filepath.Dir(path)
+			dirName := filepath.Base(repoPath)
 			fmt.Println("+" + strings.Repeat("-", len(repoPath)+13) + "+")
-			fmt.Println("| Repository: " + repoPath + " |")
+			// lenを自動で計算する
+			fmt.Println("  Repository: " + dirName)
 			fmt.Println("+" + strings.Repeat("-", len(repoPath)+13) + "+")
 
 			for _, author := range accounts {
@@ -73,12 +85,28 @@ func executeShellScriptWithArgs(searchDir string, ago string, accounts []string)
 				fmt.Printf(" <<< Account: %s >>>\n\n", author)
 				// fmt.Printf(" <<< Account: \033[32m%s\033[0m >>>\n\n", author)
 
-				cmd := exec.Command("git", "-C", repoPath, "log", "--since=\""+ago+" months ago\"", "--pretty=format:\"%h %cd [%Creset%s%C(yellow)%d%C(reset)]\"", "--author="+author, "--graph", "--date=short", "--decorate", "--all")
-				out, err := cmd.CombinedOutput()
+				cmd := exec.Command("git", "-C", repoPath, "log", "--since=\""+ago+" months ago\"", "--pretty=format:{\"commit\": \"%H\", \"branches\": \"%d\", \"date\": \"%ad\", \"message\": \"%f\"}", "--author="+author, "--date=short", "--decorate=full", "--all")
+				stdout, err := cmd.StdoutPipe()
 				if err != nil {
-					log.Fatalf("cmd.Run() failed with %s\n", err)
+					panic(err)
 				}
-				fmt.Printf("%s\n\n", out)
+				if err := cmd.Start(); err != nil {
+					panic(err)
+				}
+				scanner := bufio.NewScanner(stdout)
+				for scanner.Scan() {
+					var commit Commit
+					json.Unmarshal(scanner.Bytes(), &commit)
+					fmt.Printf(" %s %s %s%s \n",
+						commit.Commit,
+						commit.Date,
+						commit.Message,
+						commit.Branches)
+				}
+				if err := cmd.Wait(); err != nil {
+					panic(err)
+				}
+				fmt.Printf("\n\n")
 			}
 		}
 		return nil
