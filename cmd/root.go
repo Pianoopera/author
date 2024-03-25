@@ -51,7 +51,6 @@ var rootCmd = &cobra.Command{
 	Long: `author is a tool to get the history of commits of a specific author
 You can use it to get the history of commits of a specific author in all the repositories in a directory.`,
 	Args: cobra.ExactArgs(2),
-	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
 		accounts = append(accounts, args[1])
@@ -61,8 +60,7 @@ You can use it to get the history of commits of a specific author in all the rep
 			fmt.Printf("Error executing script: %s\n", err)
 			return
 		}
-		fmt.Printf("\n")
-		fmt.Printf(" Script output: %s\n", out)
+		fmt.Printf(" %s\n", out)
 	},
 }
 
@@ -121,11 +119,8 @@ func executeShellScriptWithArgs(searchDir string, ago string, accounts []string)
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
-	}
+func Execute() error {
+	return rootCmd.Execute()
 }
 
 func init() {

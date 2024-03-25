@@ -25,6 +25,12 @@ Please download author_Linux_x86_64.tar.gz from the [release page](https://githu
 author you/dir/path account_name
 ```
 
+### subCommand
+```bash
+author version
+author help
+```
+
 ### Option
 
 -h, --help | author command help
